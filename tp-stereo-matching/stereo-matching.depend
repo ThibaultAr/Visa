@@ -1,0 +1,28 @@
+# depslib dependency file v1.0
+1322906392 source:/home/m2ivi/arloing/Documents/M2IVI/Visa/tp-stereo-matching/glue.cpp
+	<stdio.h>
+	<opencv2/core/core.hpp>
+	"glue.hpp"
+
+1322906392 /home/m2ivi/arloing/Documents/M2IVI/Visa/tp-stereo-matching/glue.hpp
+
+1506529605 source:/home/m2ivi/arloing/Documents/M2IVI/Visa/tp-stereo-matching/stereo-matching.cpp
+	<stdio.h>
+	<opencv2/core/core.hpp>
+	<opencv2/imgproc/imgproc.hpp>
+	<opencv2/highgui/highgui.hpp>
+	<opencv2/calib3d/calib3d.hpp>
+	<getopt.h>
+	"glue.hpp"
+	"prenom-nom.hpp"
+
+1322906392 /home/m2ivi/arloing/Documents/M2IVI/Visa/tp-stereo-matching/prenom-nom.hpp
+
+1506529559 source:/home/m2ivi/arloing/Documents/M2IVI/Visa/tp-stereo-matching/prenom-nom.cpp
+	<stdio.h>
+	<opencv2/core/core.hpp>
+	<opencv2/imgproc/imgproc.hpp>
+	<opencv2/highgui/highgui.hpp>
+	"glue.hpp"
+	"prenom-nom.hpp"
+
