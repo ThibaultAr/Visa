@@ -38,12 +38,16 @@ Mat iviDetectCorners(const Mat& mImage,
                      int iMaxCorners) {
     // A modifier !
     double tx = mImage.cols, ty = mImage.rows;
+    double[3] vec = new double[3];
+    cv::goodFeaturesToTrack(mImage, &vec, iMaxCorners, 0.01, 20.)
+
+    tx = vec.x;
+    ty = vec.y;
     Mat mCorners = (Mat_<double>(3,4) <<
         .25 * tx, .75 * tx, .25 * tx, .75 * tx,
         .25 * ty, .25 * ty, .75 * ty, .75 * ty,
         1., 1., 1., 1.
         );
-    // Retour de la matrice
     return mCorners;
 }
 
