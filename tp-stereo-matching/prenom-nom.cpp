@@ -111,14 +111,13 @@ Mat iviDistancesMatrix(const Mat& m2DLeftCorners,
                        const Mat& mFundamental) {
     double xLeft,yLeft,zLeft,xRight,yRight,zRight,d1,d2;
     Mat epiDroite,epiGauche,pLeft,pRight;
-    int widthL,widthR;
 
-    widthL = m2DLeftCorners.size().width;
-    widthR = m2DRightCorners.size().width;
+    int colsL = m2DLeftCorners.cols;
+    int colsR = m2DRightCorners.cols;
 
-    Mat mDistances(widthL,widthR,CV_64F);
+    Mat mDistances(colsL,colsR,CV_64F);
 
-    for(int i=0;i<widthL;i++){
+    for(int i=0;i<colsL;i++){
 
           xLeft = m2DLeftCorners.at<double>(0,i);
           yLeft = m2DLeftCorners.at<double>(1,i);
@@ -128,7 +127,7 @@ Mat iviDistancesMatrix(const Mat& m2DLeftCorners,
 
           epiDroite = mFundamental*pLeft;
 
-          for(int j=0;j<widthR;j++){
+          for(int j=0;j<colsR;j++){
 
                xRight = m2DRightCorners.at<double>(0,j);
                yRight = m2DRightCorners.at<double>(1,j);
@@ -162,5 +161,77 @@ void iviMarkAssociations(const Mat& mDistances,
                          double dMaxDistance,
                          Mat& mRightHomologous,
                          Mat& mLeftHomologous) {
-    // A modifier !
+    int continu = 0;
+
+    int colsR =  mDistances.cols;
+    int colsL =  mDistances.rows;
+
+    mRightHomologous =  Mat::eye(1, colsR, CV_64F);
+    mLeftHomologous = Mat::eye(1, colsL, CV_64F);
+
+    for(int i=0;i<colsR;i++){
+        mRightHomologous.at<int>(0,i)=-1;
+    }
+
+    for(int j=0;j<colsL;j++){
+        mLeftHomologous.at<int>(0,j)=-1;
+    }
+
+    double dMin ;
+    int indexLeftMin,indexRightMin;
+
+    for(int i=0;i<colsL;i++){
+        dMin = mDistances.at<double>(i,0);
+        indexRightMin = -1;
+        for(int j=0;j<colsR;j++){
+            if(mDistances.at<double>(i,j)<=dMaxDistance){
+                if(mDistances.at<double>(i,j)<=dMin){
+                    indexRightMin = j;
+                    dMin = mDistances.at<double>(i,j);
+
+                }
+
+            }
+        }
+        mLeftHomologous.at<int>(0,i) = indexRightMin;
+    }
+
+    for(int j=0;j<widthR;j++){
+        dMin = mDistances.at<double>(0,j);
+        indexLeftMin = -1;
+        for(int i=0;i<widthL;i++){
+           if(mDistances.at<double>(i,j)<=dMaxDistance){
+                if(mDistances.at<double>(i,j)<dMin){
+                     indexLeftMin = i;
+                     dMin = mDistances.at<double>(i,j);
+                }
+
+           }
+        }
+        mRightHomologous.at<int>(0,j) = indexLeftMin;
+    }
+
+    int nbOccD = 0;
+    int nbOccG = 0;
+    for(int i=0;i<colsR;i++){
+        if(mRightHomologous.at<int>(0,i)==-1)
+            nbOccD++;
+    }
+
+    int nbHomologues = 0;
+
+    for(int j=0;j<colsL;j++){
+        if(mRightHomologous.at<int>(0,mLeftHomologous.at<int>(0,j))==j)
+            nbHomologues++;
+        if(mLeftHomologous.at<int>(0,j)==-1)
+            nbOccG++;
+    }
+
+
+    std::cout << std::endl;
+
+    std::cout << "dmax = "<< dMaxDistance<<std::endl;
+    std::cout << "homolgues = "<< nbHomologues<<std::endl;
+    std::cout << "occ droite = "<< nbOccD<<std::endl;
+    std::cout << "occ gauche = "<< nbOccG<<std::endl;
 }
