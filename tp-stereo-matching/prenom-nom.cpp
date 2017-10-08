@@ -109,9 +109,43 @@ Mat iviFundamentalMatrix(const Mat& mLeftIntrinsic,
 Mat iviDistancesMatrix(const Mat& m2DLeftCorners,
                        const Mat& m2DRightCorners,
                        const Mat& mFundamental) {
-    // A modifier !
-    Mat mDistances = Mat();
-    // Retour de la matrice fondamentale
+    double xLeft,yLeft,zLeft,xRight,yRight,zRight,d1,d2;
+    Mat epiDroite,epiGauche,pLeft,pRight;
+    int widthL,widthR;
+
+    widthL = m2DLeftCorners.size().width;
+    widthR = m2DRightCorners.size().width;
+
+    Mat mDistances(widthL,widthR,CV_64F);
+
+    for(int i=0;i<widthL;i++){
+
+          xLeft = m2DLeftCorners.at<double>(0,i);
+          yLeft = m2DLeftCorners.at<double>(1,i);
+          zLeft = m2DLeftCorners.at<double>(2,i);
+
+          pLeft = (Mat_<double>(3,1) << xLeft,yLeft,zLeft);
+
+          epiDroite = mFundamental*pLeft;
+
+          for(int j=0;j<widthR;j++){
+
+               xRight = m2DRightCorners.at<double>(0,j);
+               yRight = m2DRightCorners.at<double>(1,j);
+               zRight = m2DRightCorners.at<double>(2,j);
+
+               pRight = (Mat_<double>(3,1) << xRight,yRight,zRight);
+               epiGauche = mFundamental.t()*pRight;
+
+               d1 = abs(epiDroite.at<double>(0,0)*xRight+epiDroite.at<double>(1,0)*yRight+epiDroite.at<double>(2,0))/
+                    (sqrt(epiDroite.at<double>(0,0)*epiDroite.at<double>(0,0)+epiDroite.at<double>(1,0)*epiDroite.at<double>(1,0)));
+
+               d2 = abs(epiGauche.at<double>(0,0)*xLeft+epiGauche.at<double>(1,0)*yLeft+epiGauche.at<double>(2,0))/
+                    (sqrt(epiGauche.at<double>(0,0)*epiGauche.at<double>(0,0)+epiGauche.at<double>(1,0)*epiGauche.at<double>(1,0)));
+
+               mDistances.at<double>(i,j)=d1+d2;
+          }
+    }
     return mDistances;
 }
 
