@@ -120,14 +120,23 @@ Plot.setColor("red");
 Plot.add("line",x , mibh);
 Plot.show();
 
-Plot.create("Max", "Temp", "Y");
+Plot.create("Max Basse Moyenne", "Temp", "Y");
 Plot.setLimits(0, 40, 0, 1);
 Plot.setColor("blue");
 Plot.add("line",x , mabm);
+Plot.show();
+Plot.create("Max Moyenne Haute", "Temp", "Y");
+Plot.setLimits(0, 40, 0, 1);
 Plot.setColor("orange");
 Plot.add("line",x , mamh);
+Plot.show();
+Plot.create("Max Basse Haute", "Temp", "Y");
+Plot.setLimits(0, 40, 0, 1);
 Plot.setColor("red");
 Plot.add("line",x , mabh);
+Plot.show();
+Plot.create("Max Basse Moyenne Haute", "Temp", "Y");
+Plot.setLimits(0, 40, 0, 1);
 Plot.setColor("green");
 Plot.add("line",x , mabmh);
 Plot.show();
@@ -150,6 +159,13 @@ Plot.setColor("blue");
 Plot.add("line",x , chauffage);
 Plot.setColor("red");
 Plot.add("line",x , chauffImp);
+Plot.show();
+
+
+Plot.create("Chauff", "Temp", "Y");
+Plot.setLimits(0, 15, 0, 1);
+Plot.setColor("blue");
+Plot.add("line",x , chauffage);
 Plot.show();
 
 a = 15 - truncValue;
