@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename type &apos;FCM_&apos; to &apos;FCM_Visa_&apos;&#x0A;- Original project: &apos;TESTPlugin_&apos;&#x0A;- Original element: &apos;FCM_&apos;&#x0A;- Renamed element: &apos;FCM_Visa_&apos;&#x0A;- Update references to refactored element&#x0A;- Update textual occurrences in comments and strings" description="Rename type &apos;FCM_&apos;" flags="589830" id="org.eclipse.jdt.ui.rename.type" input="/src&lt;{FCM_.java[FCM_" matchStrategy="1" name="FCM_Visa_" qualified="false" references="true" similarDeclarations="false" stamp="1513584525320" textual="false" version="1.0"/>
+</session>
