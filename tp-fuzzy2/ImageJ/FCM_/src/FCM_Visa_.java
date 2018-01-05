@@ -56,7 +56,7 @@ public class FCM_Visa_ implements PlugIn
 		Object[] possibilities = {"FCM", "HCM", "PCM", "DAVE"};
 		String choice = (String) JOptionPane.showInputDialog(null, "Which Technique ?", "Technique", JOptionPane.QUESTION_MESSAGE, null, possibilities, "FCM");
 
-		impseg=NewImage.createImage("Image segmentée par " + choice,width,height,1,24,0);
+		impseg=NewImage.createImage("Image segmentÃ©e par " + choice,width,height,1,24,0);
 		ipseg = impseg.getProcessor();
 		impseg.show();
 
@@ -64,6 +64,7 @@ public class FCM_Visa_ implements PlugIn
 		int nbclasses,nbpixels,iter;
 		double stab,seuil,valeur_seuil;
 		int i,j,k,l;
+		double delta = 0.0;
 		
 		String demande =JOptionPane.showInputDialog("Nombre de classes : ");
 		nbclasses =Integer.parseInt(demande);
@@ -72,13 +73,18 @@ public class FCM_Visa_ implements PlugIn
 		demande =JOptionPane.showInputDialog("Valeur de m : ");
 		double m =Double.parseDouble(demande);
 
-		demande =JOptionPane.showInputDialog("Nombre itération max : ");
+		demande =JOptionPane.showInputDialog("Nombre itÃ©ration max : ");
 		int itermax =Integer.parseInt(demande);
 
-		demande =JOptionPane.showInputDialog("Valeur du seuil de stabilité : ");
+		demande =JOptionPane.showInputDialog("Valeur du seuil de stabilitÃ© : ");
 		valeur_seuil =Double.parseDouble(demande);
+		
+		if(choice == "DAVE") {
+			demande = JOptionPane.showInputDialog("Valeur du ratio d'aberrations : ");
+			delta = Math.pow(Double.parseDouble(demande), 2);
+		}
 
-		demande =JOptionPane.showInputDialog("Randomisation améliorée ? ");
+		demande =JOptionPane.showInputDialog("Randomisation amÃ©liorÃ©e ? ");
 		int valeur=Integer.parseInt(demande);
 
 
@@ -95,7 +101,7 @@ public class FCM_Visa_ implements PlugIn
 		  figJ[i]=0;
 		}
 
-		// Récupération des données images 
+		// RÃ©cupÃ©ration des donnÃ©es images 
 		l = 0;
 		for(i = 0; i < width; i++)
 		{
@@ -124,15 +130,195 @@ public class FCM_Visa_ implements PlugIn
 			break;
 		case "Dave":
 			System.out.println("Dave");
-			Dave(ip, ipseg, impseg, red, green, blue, figJ, m, nbclasses, width, height, valeur, itermax, valeur_seuil);
+			Dave(ip, ipseg, impseg, red, green, blue, figJ, m, nbclasses, width, height, valeur, itermax, valeur_seuil, delta);
 			break;
 		}
 	}
     
 	private void Dave(ImageProcessor ip, ImageProcessor ipseg, ImagePlus impseg, double[] red, double[] green,
-			double[] blue, double[] figJ, double m, int nbclasses, int width, int height, int valeur, int itermax,
-			double valeur_seuil) {
-		System.out.println("Not Yet Implemented");
+			double[] blue, double[] figJ, double m, int nbclasses, int width, int height, int randomAmeliore, int itermax,
+			double valeur_seuil, double delta) {
+		int imax, jmax, kmax;
+		int nbpixels = width * height;
+		double Dmat[][] = new double[nbclasses][nbpixels];
+		double Dprev[][] = new double[nbclasses][nbpixels];
+		double Umat[][] = new double[nbclasses][nbpixels];
+		double Uprev[][] = new double[nbclasses][nbpixels];
+		double[] Ucluster = new double[nbpixels];
+		double c[][] = new double[nbclasses][3];
+		double nu[] = new double[nbclasses];
+		int[] init=new int[3];
+		
+		imax = nbpixels;  // nombre de pixels dans l'image
+		jmax = 3;  // nombre de composantes couleur
+		kmax=nbclasses;
+		double data[][] = new double[nbclasses][3];
+		int[] fixe=new int[3]; 
+		int xmin = 0;
+	   	int xmax = width;
+	   	int ymin = 0;
+		int ymax = height;
+		int rx, ry;	
+		int x,y;
+		int epsilonx,epsilony;
+		int i, j, k, l;
+		int iter;
+		double stab,seuil;
+	
+		// Initialisation des centroides (alÃ©atoirement )
+	
+		for(i=0;i<nbclasses;i++){
+			if (randomAmeliore == 1) {
+				epsilonx = rand((int) (width / (i + 2)), (int) (width / 2));
+				epsilony = rand((int) (height / (4)), (int) (height / 2));
+			} else {
+				epsilonx = 0;
+				epsilony = 0;
+			}
+			rx = rand(xmin + epsilonx, xmax - epsilonx);
+			ry = rand(ymin + epsilony, ymax - epsilony);
+			ip.getPixel(rx, ry, init);
+			c[i][0] = init[0]; c[i][1] =init[1]; c[i][2] = init[2];
+		}
+		
+		// Calcul de distance entre data et centroides
+		for(l = 0; l < nbpixels; l++)
+		{
+			for(k = 0; k < kmax; k++)
+			{
+				double r2 = Math.pow(red[l] - c[k][0], 2);
+				double g2 = Math.pow(green[l] - c[k][1], 2);
+				double b2 = Math.pow(blue[l] - c[k][2], 2);
+				Dprev[k][l] = r2 + g2 + b2;
+			}
+		}
+		
+		// Initialisation des degr�s d'appartenance
+
+		for (j = 0; j < nbpixels; j++) {
+			for (i = 0; i < nbclasses; i++) {
+				double uij = 0.0;
+				for (k = 0; k < kmax; k++) {
+					if (Dprev[k][j] != 0.0) {
+						uij += Math.pow(Dprev[i][j] / Dprev[k][j], 2.0 / (m - 1.0));
+					} else {
+						uij += 1.0;
+					}
+				}
+				Uprev[i][j] = Math.pow(uij, -1.0);
+			}
+		}
+		
+		iter = 0;
+		stab = 2;
+		seuil = valeur_seuil;
+
+		/////////////////// A COMPLETER ///////////////////////////////
+		while ((iter < itermax) && (stab > seuil)) {
+
+			// Update the matrix of centroids
+			for(k = 0; k < nbclasses; k++){
+				double sum[] = {0,0,0};
+				double sum2 = 0;
+				
+				for(l = 0; l < nbpixels; l++) {
+					sum[0] += Math.pow(Uprev[k][l], m) * red[l];
+					sum[1] += Math.pow(Uprev[k][l], m) * green[l];
+					sum[2] += Math.pow(Uprev[k][l], m) * blue[l];
+					
+					sum2 += Math.pow(Uprev[k][l], m);
+				}
+				
+				c[k][0] = sum[0] / sum2;
+				c[k][1] = sum[1] / sum2;
+				c[k][2] = sum[2] / sum2;
+			}
+
+			// Compute Dmat, the matrix of distances (euclidian) with the
+			// centro�ds
+			for (k = 0; k < kmax; k++) {
+				for (i = 0; i < nbpixels; i++) {
+					double r2 = Math.pow(red[i] - c[k][0], 2);
+					double g2 = Math.pow(green[i] - c[k][1], 2);
+					double b2 = Math.pow(blue[i] - c[k][2], 2);
+					Dmat[k][i] = r2 + g2 + b2;
+				}
+			}
+
+			// Calculate difference between the previous partition and the new
+			// partition (performance index)
+
+			// degre d'appartenance
+			for (j = 0; j < nbpixels; j++) {
+				for (i = 0; i < nbclasses; i++) {
+					double uij = 0.0;
+					for (k = 0; k < kmax; k++) {
+						if (Dmat[k][j] != 0)
+							uij += Math.pow(Dmat[i][j] / Dmat[k][j], 2.0 / (m - 1.0));
+						else
+							uij += 1.0;
+					}
+					Umat[i][j] = 1.0 / uij;
+				}
+			}
+
+			// compute Ucluster
+			for (j = 0; j < nbpixels; j++) {
+				for (i = 0; i < nbclasses; i++) {
+					Ucluster[j] += Umat[i][j];
+				}
+				Ucluster[j] = 1.0 - Ucluster[j];
+			}
+
+			// compute J
+			{
+				double sum1 = 0.0;
+				double sum2 = 0.0;
+				for (j = 0; j < nbpixels; j++) {
+					for (i = 0; i < nbclasses; i++)
+						sum1 += Math.pow(Umat[i][j], m) * Dmat[i][j];
+					sum2 += delta * Math.pow(Ucluster[j], m);
+				}
+				figJ[iter] = sum1 + sum2;
+			}
+
+			stab = iter == 0 ? figJ[iter] : Math.abs(figJ[iter] - figJ[iter-1]);
+			Uprev = Umat;
+			Dprev = Dmat;
+			iter++;
+
+			////////////////////////////////////////////////////////
+
+			// Affichage de l'image segment�e
+			double[] mat_array = new double[nbclasses];
+			l = 0;
+			for (i = 0; i < width; i++) {
+				for (j = 0; j < height; j++) {
+					for (k = 0; k < nbclasses; k++) {
+						mat_array[k] = Umat[k][l];
+					}
+					int indice = IndiceMaxOfArray(mat_array, nbclasses);
+					int array[] = new int[3];
+					array[0] = (int) c[indice][0];
+					array[1] = (int) c[indice][1];
+					array[2] = (int) c[indice][2];
+					ipseg.putPixel(i, j, array);
+					l++;
+				}
+			}
+			impseg.updateAndDraw();
+			//////////////////////////////////
+		} // Fin boucle
+		
+		double[] xplot= new double[itermax];
+		double[] yplot=new double[itermax];
+		for(int w = 0; w < itermax; w++){
+			xplot[w]=(double)w;	yplot[w]=(double) figJ[w];
+		}
+		Plot plot = new Plot("Performance Index (DAVE)","iterations","J(P) value",xplot,yplot);
+		plot.setLineWidth(2);
+		plot.setColor(Color.blue);
+		plot.show();
 		
 	}
 
@@ -166,19 +352,19 @@ public class FCM_Visa_ implements PlugIn
 		int iter;
 		double stab,seuil;
 	
-		// Initialisation des centroides (aléatoirement )
+		// Initialisation des centroides (alÃ©atoirement )
 	
 		for(i=0;i<nbclasses;i++){
-			if(randomAmeliore==1) {
-				epsilonx=rand((int)(width/(i+2)),(int)(width/2));
-			    epsilony=rand((int)(height/(4)),(int)(height/2));
+			if (randomAmeliore == 1) {
+				epsilonx = rand((int) (width / (i + 2)), (int) (width / 2));
+				epsilony = rand((int) (height / (4)), (int) (height / 2));
 			} else {
-			   epsilonx=0;
-			   epsilony=0;
+				epsilonx = 0;
+				epsilony = 0;
 			}
-			rx = rand(xmin+epsilonx, xmax-epsilonx);
-			ry = rand(ymin+epsilony, ymax-epsilony);
-			ip.getPixel(rx,ry,init);
+			rx = rand(xmin + epsilonx, xmax - epsilonx);
+			ry = rand(ymin + epsilony, ymax - epsilony);
+			ip.getPixel(rx, ry, init);
 			c[i][0] = init[0]; c[i][1] =init[1]; c[i][2] = init[2];
 		}
 			
@@ -204,15 +390,12 @@ public class FCM_Visa_ implements PlugIn
 			}
 		}
 		
-		//Init nu
-		for(i = 0; i<kmax; i++){
-			double sum1 = 0.0;
-			double sum2 = 0.0;
-			for(j = 0; j < nbpixels; j++) {
-				sum1 += Math.pow(Uprev[i][j], m) * Dprev[i][j];
-				sum2 += Math.pow(Uprev[i][j], m);
+		//Init degres d'appartenance
+		for (j = 0; j < nbpixels; j++) {
+			for (i = 0; i < nbclasses; i++) {
+				double uij = 1d / (1d + Math.pow(Dmat[i][j], 1d / (m - 1d)));
+				Umat[i][j] = uij;
 			}
-			nu[i] = sum1 / sum2;
 		}
 
 		iter = 0;
@@ -253,34 +436,41 @@ public class FCM_Visa_ implements PlugIn
 			}
 		}
 		
-		for(l = 0; l < nbpixels; l++) {
-			for(i = 0; i < kmax; i++) {
-				Umat[i][l] = 1.0 / Math.pow((1.0 + Dmat[i][l] / nu[i]), 1.0 / (m-1));
+		//Comput nu_i
+		for (i = 0; i < nbclasses; i++) {
+			double sum1 = 0.0;
+			double sum2 = 0.0;
+			for (j = 0; j < nbpixels; j++) {
+				sum1 += Math.pow(Uprev[i][j], m) * Dprev[i][j];
+				sum2 += Math.pow(Uprev[i][j], m);
+			}
+			if (sum2 != 0)
+				nu[i] = sum1 / sum2;
+			else
+				nu[i] = 1d;
+		}
+		
+		// degres d'appartenance
+		for (j = 0; j < nbpixels; j++) {
+			for (i = 0; i < nbclasses; i++) {
+				double uij = 1d / (1d + Math.pow(Dmat[i][j] / nu[i], 1d / (m - 1d)));
+				Umat[i][j] = uij;
 			}
 		}
 		
 		// Calculate difference between the previous partition and the new partition (performance index)
-		double sum = 0.0;
-		double subsum = 0.0;
-		for(i = 0; i<nbclasses; i++) {
-			for(j = 0; j<nbpixels; j++) {
-				figJ[iter] += Math.pow(Uprev[i][j], m) * Dprev[i][j];
-				subsum += Math.pow(1.0 - Uprev[i][j], m);
+		figJ[iter] = 0d;
+		for (i = 0; i < nbclasses; i++) {
+			double sum1 = 0d;
+			double sum2 = 0d;
+			for (j = 0; j < nbpixels; j++) {
+				sum1 += Math.pow(Umat[i][j], m) * Dmat[i][j];
+				sum2 += Math.pow(1 - Umat[i][j], m);
 			}
-			sum += nu[i] * subsum;
+			figJ[iter] += sum1 + sum2 * nu[i];
 		}
-		figJ[iter] += sum;
 		
-		//Update nu
-		for(i = 0; i<kmax; i++){
-			double sum1 = 0.0;
-			double sum2 = 0.0;
-			for(j = 0; j < nbpixels; j++) {
-				sum1 += Math.pow(Uprev[i][j], m) * Dprev[i][j];
-				sum2 += Math.pow(Uprev[i][j], m);
-			}
-			nu[i] = sum1 / sum2;
-		}
+		
 		
 		stab = iter == 0 ? figJ[iter] : Math.abs(figJ[iter] - figJ[iter-1]);
 		Uprev = Umat;
@@ -288,7 +478,7 @@ public class FCM_Visa_ implements PlugIn
 		iter++;
 		////////////////////////////////////////////////////////
 	
-		// Affichage de l'image segmentée 
+		// Affichage de l'image segmentÃ©e 
 		double[] mat_array=new double[nbclasses];
 		l = 0;
 		for(i=0;i<width;i++)
@@ -352,7 +542,7 @@ public class FCM_Visa_ implements PlugIn
 		int iter;
 		double stab,seuil;
 		
-		// Initialisation des centroédes (aléatoirement)
+		// Initialisation des centroÃ©des (alÃ©atoirement)
 		for(i=0;i<nbclasses;i++) {
 		    if(randomAmeliore==1) {  
 		    	epsilonx=rand((int)(width/(i+2)),(int)(width/2));
@@ -379,7 +569,7 @@ public class FCM_Visa_ implements PlugIn
 			}
 		}
 		
-		// Initialisation des degrés d'appartenance
+		// Initialisation des degrÃ©s d'appartenance
 		for(l = 0; l < nbpixels; l++) {
 			for(i = 0; i < kmax; i++) {
 				double res = 1.0;
@@ -451,7 +641,7 @@ public class FCM_Visa_ implements PlugIn
 			iter++;
 			////////////////////////////////////////////////////////
 		
-			// Affichage de l'image segmentée 
+			// Affichage de l'image segmentÃ©e 
 			double[] mat_array=new double[nbclasses];
 			l = 0;
 			for(i=0;i<width;i++) {
@@ -513,7 +703,7 @@ public class FCM_Visa_ implements PlugIn
 		int iter;
 		double stab,seuil;
 	
-		// Initialisation des centroides (aléatoirement )
+		// Initialisation des centroides (alÃ©atoirement )
 	
 		for(i=0;i<nbclasses;i++){
 			if(randomAmeliore==1) {
@@ -541,7 +731,7 @@ public class FCM_Visa_ implements PlugIn
 			}
 		}
 	
-		// Initialisation des degrés d'appartenance
+		// Initialisation des degrÃ©s d'appartenance
 		//A COMPLETER
 		for(l = 0; l < nbpixels; l++) {
 			for(i = 0; i < kmax; i++) {
@@ -623,7 +813,7 @@ public class FCM_Visa_ implements PlugIn
 		iter++;
 		////////////////////////////////////////////////////////
 	
-		// Affichage de l'image segmentée 
+		// Affichage de l'image segmentÃ©e 
 		double[] mat_array=new double[nbclasses];
 		l = 0;
 		for(i=0;i<width;i++)
